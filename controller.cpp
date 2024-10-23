@@ -127,6 +127,84 @@ vec3 gamepad_get_stick(int stick, const float deadzone = 0.2f)
 
 //--------------------------------------
 
+// Basic functionality to get keyboard input including deadzone and 
+// squaring of the stick location to increase sensitivity. To make 
+// all the other code that uses this easier, we assume stick is 
+// oriented on floor (i.e. y-axis is zero)
+
+vec3 keyboard_get_movement()
+{
+    // Static variables to keep track of the speed in each direction
+    static float MAX_SPEED = 3.0f;
+    static float ACCELERATION = 0.1f;  // Speed increment per frame
+
+    static float speed_x = 0.0f;
+    static float speed_z = 0.0f;
+
+    static int prev_key = 0;  // Store previous key state
+
+    float movex = 0.0f;
+    float movez = 0.0f;
+
+    // Determine the current key pressed (forward, backward, left, right)
+    if (IsKeyDown(KEY_UP))
+    {
+        if (prev_key != KEY_UP)  // Reset speed when changing direction
+        {
+            speed_x = 0.0f;  // Reset x-speed when moving forward
+            speed_z = 0.0f;
+        }
+
+        speed_z += ACCELERATION;
+        if (speed_z > MAX_SPEED) speed_z = MAX_SPEED;
+        movez = -speed_z;  // Move forward (negative z-axis)
+        prev_key = KEY_UP;
+    }
+    else if (IsKeyDown(KEY_DOWN))
+    {
+        if (prev_key != KEY_DOWN)  // Reset speed when changing direction
+        {
+            speed_x = 0.0f;
+            speed_z = 0.0f;
+        }
+
+        speed_z += ACCELERATION;
+        if (speed_z > MAX_SPEED) speed_z = MAX_SPEED;
+        movez = speed_z;  // Move backward (positive z-axis)
+        prev_key = KEY_DOWN;
+    }
+    else if (IsKeyDown(KEY_LEFT))
+    {
+        if (prev_key != KEY_LEFT)  // Reset speed when changing direction
+        {
+            speed_x = 0.0f;
+            speed_z = 0.0f;
+        }
+
+        speed_x += ACCELERATION;
+        if (speed_x > MAX_SPEED) speed_x = MAX_SPEED;
+        movex = -speed_x;  // Move left (negative x-axis)
+        prev_key = KEY_LEFT;
+    }
+    else if (IsKeyDown(KEY_RIGHT))
+    {
+        if (prev_key != KEY_RIGHT)  // Reset speed when changing direction
+        {
+            speed_x = 0.0f;
+            speed_z = 0.0f;
+        }
+
+        speed_x += ACCELERATION;
+        if (speed_x > MAX_SPEED) speed_x = MAX_SPEED;
+        movex = speed_x;  // Move right (positive x-axis)
+        prev_key = KEY_RIGHT;
+    }
+
+    // Return the movement vector combining x and z-axis changes
+    return vec3(movex, 0.0f, movez);
+}
+
+
 float orbit_camera_update_azimuth(
     const float azimuth, 
     const vec3 gamepadstick_right,
@@ -1499,8 +1577,11 @@ int main(void)
     {
       
         // Get gamepad stick states
-        vec3 gamepadstick_left = gamepad_get_stick(GAMEPAD_STICK_LEFT);
+        // vec3 gamepadstick_left = gamepad_get_stick(GAMEPAD_STICK_LEFT);
         vec3 gamepadstick_right = gamepad_get_stick(GAMEPAD_STICK_RIGHT);
+
+        // Get movement from keyboard (add to gamepad movement)
+        vec3 gamepadstick_left = keyboard_get_movement();
         
         // Get if strafe is desired
         bool desired_strafe = desired_strafe_update();
